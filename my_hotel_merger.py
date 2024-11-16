@@ -199,6 +199,37 @@ class HotelsService:
         # Normalize amenities and deduplicate
         normalized = {HotelsService.normalize_amenity(amenity): amenity for amenity in existing + new}
         return list(normalized.values())
+    
+    @staticmethod
+    def merge_location(existing: Location, new: Location) -> Location:
+        """
+        Merge two Location objects, with preference for existing data.
+        Specially for the address, .
+        """
+        lat = existing.lat or new.lat
+        lng = existing.lng or new.lng
+        existing_address = existing.address or ''
+        new_address = new.address or ''
+        city = existing.city or new.city
+        if len(existing.country) > len(new.country):
+            country = existing.country
+        else:
+            country = new.country
+
+        existing_address_list = existing_address.split(', ')
+        new_address_list = new_address.split(', ')
+        
+        if existing_address:
+            address = existing_address
+            for item in new_address_list:
+                if item and item not in existing_address_list:
+                    address += ', ' + item
+        else:
+            address = new_address
+    
+
+        return Location(lat=lat, lng=lng, address=address, city=city, country=country)
+
 
     def merge_and_save(self, hotel_list: List[Hotel]):
         for hotel in hotel_list:
@@ -215,7 +246,7 @@ class HotelsService:
 
                 # Merge other attributes (you can expand this as needed)
                 existing.description = existing.description or hotel.description
-                existing.location = existing.location or hotel.location
+                existing.location = self.merge_location(existing.location, hotel.location)
                 existing.images.rooms = list({img.link: img for img in (existing.images.rooms + hotel.images.rooms)}.values())
                 existing.images.site = list({img.link: img for img in (existing.images.site + hotel.images.site)}.values())
                 existing.images.amenities = list({img.link: img for img in (existing.images.amenities + hotel.images.amenities)}.values())
