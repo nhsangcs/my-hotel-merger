@@ -67,23 +67,23 @@ class Acme(BaseSupplier):
             destination_id = dto['DestinationId'],
             name = dto['Name'].strip(),
             location = Location(
-                lat = dto['Latitude'],
-                lng = dto['Longitude'],
+                lat = dto.get('Latitude', None),
+                lng = dto.get('Longitude', None),
                 address = dto['Address'].strip(),
-                city = dto['City'],
-                country = dto['Country']
+                city = dto.get('City', '').strip(),
+                country = dto.get('Country', '').strip()
             ),
-            description = dto['Description'].strip(),
-            amenities=Amenities(
-                general = dto.get("Facilities", []),
-                room = dto.get("RoomFacilities", [])
+            description = dto.get('Description', '').strip(),
+            amenities = Amenities(
+                general = dto.get('Facilities', []),
+                room = dto.get('RoomFacilities', [])
             ),
-            images=Images(
+            images = Images(
                 rooms = [Image(link=img['link'], description=img['description']) for img in dto.get("Images", [])],
                 site = [Image(link=img['link'], description=img['description']) for img in dto.get("Images", [])],
                 amenities = [Image(link=img['link'], description=img['description']) for img in dto.get("Images", [])]
             ),
-            booking_conditions=dto.get("BookingConditions", [])
+            booking_conditions = dto.get("BookingConditions", [])
         )
 
 class Paperflies(BaseSupplier):
@@ -94,16 +94,16 @@ class Paperflies(BaseSupplier):
     @staticmethod
     def parse(dto: Dict) -> Hotel:
         return Hotel(
-            id=dto['hotel_id'],
-            destination_id=dto['destination_id'],
-            name=dto['hotel_name'],
-            description=dto['details'],
-            location=Location(
-                lat=None,
-                lng=None,
-                address=dto.get('location', {}).get('address', ''),
-                city=None,
-                country=dto.get('location', {}).get('country', '')
+            id = dto['hotel_id'],
+            destination_id = dto['destination_id'],
+            name = dto.get('name', '').strip(),
+            description = dto.get('details', '').strip(),
+            location = Location(
+                lat = dto.get('location', {}).get('lat', None),
+                lng = dto.get('location', {}).get('lng', None),
+                address = dto.get('location', {}).get('address', '').strip(),
+                city = dto.get('location', {}).get('city', '').strip(),
+                country = dto.get('location', {}).get('country', '').strip()
             ),
             amenities=Amenities(
                 general=dto['amenities']['general'],
@@ -163,7 +163,7 @@ class Patagonia(BaseSupplier):
                     for img in dto.get('images', {}).get('amenities', [])
                 ]
             ),
-            booking_conditions=[]  # Booking conditions are not provided; set to an empty list
+            booking_conditions=dto.get("booking_conditions", [])
         )
 
 
@@ -180,6 +180,8 @@ class HotelsService:
         - Converting camelCase to space-separated
         - Stripping extra spaces
         """
+        if amenity.strip().lower() == 'wifi':
+            return 'wifi'
         # Convert camelCase or PascalCase to space-separated words
         spaced = re.sub(r'([a-z])([A-Z])', r'\1 \2', amenity)
         # Convert to lowercase and remove extra spaces
@@ -196,9 +198,8 @@ class HotelsService:
         new = new or []
         new = [HotelsService.normalize_amenity(amenity) for amenity in new]
 
-        # Normalize amenities and deduplicate
-        normalized = {HotelsService.normalize_amenity(amenity): amenity for amenity in existing + new}
-        return list(normalized.values())
+        res = set(existing + new)
+        return list(res)
     
     @staticmethod
     def merge_location(existing: Location, new: Location) -> Location:
@@ -226,7 +227,6 @@ class HotelsService:
                     address += ', ' + item
         else:
             address = new_address
-    
 
         return Location(lat=lat, lng=lng, address=address, city=city, country=country)
 
