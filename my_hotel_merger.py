@@ -69,11 +69,11 @@ class Acme(BaseSupplier):
             location = Location(
                 lat = dto.get('Latitude', None),
                 lng = dto.get('Longitude', None),
-                address = dto['Address'].strip(),
-                city = dto.get('City', '').strip(),
-                country = dto.get('Country', '').strip()
+                address = (dto.get('Address') or "").strip(),
+                city = (dto.get('City') or "").strip(),
+                country = (dto.get('Country') or '').strip()
             ),
-            description = dto.get('Description', '').strip(),
+            description = (dto.get('Description') or '').strip(),
             amenities = Amenities(
                 general = dto.get('Facilities', []),
                 room = dto.get('RoomFacilities', [])
@@ -96,14 +96,14 @@ class Paperflies(BaseSupplier):
         return Hotel(
             id = dto['hotel_id'],
             destination_id = dto['destination_id'],
-            name = dto.get('name', '').strip(),
-            description = dto.get('details', '').strip(),
+            name = (dto.get('hotel_name') or '').strip(),
+            description = (dto.get('details') or '').strip(),
             location = Location(
                 lat = dto.get('location', {}).get('lat', None),
                 lng = dto.get('location', {}).get('lng', None),
-                address = dto.get('location', {}).get('address', '').strip(),
-                city = dto.get('location', {}).get('city', '').strip(),
-                country = dto.get('location', {}).get('country', '').strip()
+                address = (dto.get('location', {}).get('address', '') or '').strip(),
+                city = (dto.get('location', {}).get('city', '') or '').strip(),
+                country = (dto.get('location', {}).get('country', '') or '').strip()
             ),
             amenities=Amenities(
                 general=dto['amenities']['general'],
