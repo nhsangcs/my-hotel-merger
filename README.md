@@ -9,7 +9,7 @@ A Python-based Command Line Interface (CLI) tool for fetching, merging, and retu
 - Outputs data in JSON format.
 
 ## Requirements
-- Python 3.7+
+- Python 3.8 or later
 - Virtualenv (optional but recommended)
 
 ## Installation
