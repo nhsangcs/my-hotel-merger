@@ -65,7 +65,7 @@ class Acme(BaseSupplier):
         return Hotel(
             id = dto['Id'],
             destination_id = dto['DestinationId'],
-            name = dto['Name'].strip(),
+            name = (dto.get('Name') or '').strip(),
             location = Location(
                 lat = dto.get('Latitude', None),
                 lng = dto.get('Longitude', None),
@@ -136,7 +136,7 @@ class Patagonia(BaseSupplier):
         return Hotel(
             id = dto['id'],
             destination_id = dto['destination'],
-            name = dto['name'].strip(),
+            name = (dto.get('name') or '').strip(),
             description = (dto.get("info") or "").strip(),  
             location=Location(
                 lat=dto.get("lat", None),
