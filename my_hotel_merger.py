@@ -3,6 +3,7 @@ import json
 import argparse
 import requests
 import re
+import logging
 from typing import List, Dict
 
 @dataclass
@@ -40,6 +41,16 @@ class Hotel:
     images: Images
     booking_conditions: List[str]
 
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler("hotel-data-fetch.log"),
+        logging.StreamHandler()
+    ]
+)
+
 class BaseSupplier:
     @staticmethod
     def endpoint():
@@ -51,9 +62,33 @@ class BaseSupplier:
 
     def fetch(self) -> List[Hotel]:
         url = self.endpoint()
-        resp = requests.get(url)
-        resp.raise_for_status()
-        return [self.parse(dto) for dto in resp.json()]
+        try:
+            logging.info(f"Fetching data from {url}")
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()  # Raise HTTPError for bad responses
+            data = response.json()
+            logging.info(f"Received {len(data)} records from {url}")
+            return [self.parse(dto) for dto in data]
+        except requests.exceptions.RequestException as e:
+            logging.error(f"HTTP error from {url}: {str(e)}")
+            return []
+        except Exception as e:
+            logging.error(f"Unexpected error from {url}: {str(e)}")
+            return []
+        
+class SupplierFactory:
+    _suppliers = []
+
+    @staticmethod
+    def register_supplier(supplier_class):
+        """Registers a supplier class."""
+        SupplierFactory._suppliers.append(supplier_class)
+
+    @staticmethod
+    def get_suppliers():
+        """Returns instances of all registered suppliers."""
+        return [supplier() for supplier in SupplierFactory._suppliers]
+
 
 class Acme(BaseSupplier):
     @staticmethod
@@ -85,6 +120,8 @@ class Acme(BaseSupplier):
             ),
             booking_conditions = dto.get("BookingConditions", [])
         )
+
+SupplierFactory.register_supplier(Acme)
 
 class Paperflies(BaseSupplier):
     @staticmethod
@@ -125,6 +162,8 @@ class Paperflies(BaseSupplier):
             ),
             booking_conditions=dto['booking_conditions']
         )
+    
+SupplierFactory.register_supplier(Paperflies)
 
 class Patagonia(BaseSupplier):
     @staticmethod
@@ -166,6 +205,7 @@ class Patagonia(BaseSupplier):
             booking_conditions=dto.get("booking_conditions", [])
         )
 
+SupplierFactory.register_supplier(Patagonia)
 
 
 class HotelsService:
@@ -268,12 +308,15 @@ def fetch_hotels(hotel_ids: str, destination_ids: str) -> str:
     destination_ids = destination_ids.split(',') if destination_ids != 'none' else None
 
     # Initialize suppliers
-    suppliers = [Acme(), Paperflies(), Patagonia()]
+    suppliers = SupplierFactory.get_suppliers()
 
     # Fetch data from suppliers
     all_supplier_data = []
     for supplier in suppliers:
-        all_supplier_data.extend(supplier.fetch())
+        try:
+            all_supplier_data.extend(supplier.fetch())
+        except Exception as e:
+            logging.error(f"Error fetching data from supplier {supplier.__class__.__name__}: {str(e)}")
 
     # Merge data
     svc = HotelsService()
