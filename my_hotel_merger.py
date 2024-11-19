@@ -324,6 +324,7 @@ def fetch_hotels(hotel_ids: str, destination_ids: str) -> str:
 
     # Filter data
     filtered_hotels = svc.find(hotel_ids, destination_ids)
+    logging.info(f"Found {len(filtered_hotels)} hotels matching the criteria")
 
     # Convert to JSON
     return json.dumps([asdict(hotel) for hotel in filtered_hotels], indent=4)
